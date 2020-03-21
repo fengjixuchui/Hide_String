@@ -5,8 +5,8 @@
 using namespace std;
 constexpr auto block_size = 16;
 #define MMIX(h,k) { (k) *= m; (k) ^= (k) >> r; (k) *= m; (h) *= m; (h) ^= (k); }
-#define HIDE_STR(hide, s) auto (hide) = hide_string<sizeof(s) - 1, __COUNTER__ >(s, make_index_sequence<sizeof(s) - 1>())
-#define PRINT_HIDE_STR(s) (hide_string<sizeof(s) - 1, __COUNTER__ >(s, make_index_sequence<sizeof(s) - 1>()).decrypt())
+#define HIDE_STR2(hide, s) auto (hide) = hide_string<sizeof(s) - 1, __COUNTER__ >(s, make_index_sequence<sizeof(s) - 1>())
+#define HIDE_STR(s) (hide_string<sizeof(s) - 1, __COUNTER__ >(s, make_index_sequence<sizeof(s) - 1>()).decrypt())
 
 inline uint32_t murmur3(const void* key, int len, unsigned int seed)
 {
