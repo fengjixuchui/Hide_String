@@ -1,10 +1,12 @@
 #pragma once
+
 #include <array>
 #include <random>
 
 using namespace std;
 constexpr auto block_size = 16;
 constexpr auto xtea3_delta = 0x9E3889B9;
+
 #define MMIX(h,k) { (k) *= m; (k) ^= (k) >> r; (k) *= m; (h) *= m; (h) ^= (k); }
 #define HIDE_STR2(hide, s) auto (hide) = hide_string<sizeof(s) - 1, __COUNTER__ >(s, make_index_sequence<sizeof(s) - 1>())
 #define HIDE_STR(s) (hide_string<sizeof(s) - 1, __COUNTER__ >(s, make_index_sequence<sizeof(s) - 1>()).decrypt())
@@ -41,10 +43,8 @@ inline uint32_t murmur3(const void* key, int len, unsigned int seed)
 
 constexpr auto time = __TIME__;
 
-constexpr auto seed =
-	static_cast<int>(time[7]) + static_cast<int>(time[6]) * 10
-	+ static_cast<int>(time[4]) * 60 + static_cast<int>(time[3]) * 600
-	+ static_cast<int>(time[1]) * 3600 + static_cast<int>(time[0]) * 36000;
+constexpr auto seed = static_cast<int>(time[7]) + static_cast<int>(time[6]) * 10 + static_cast<int>(time[4]) * 60 +
+	static_cast<int>(time[3]) * 600 + static_cast<int>(time[1]) * 3600 + static_cast<int>(time[0]) * 36000;
 
 template <int N>
 struct random_generator_string
@@ -85,6 +85,9 @@ struct random_char
 class xtea3
 {
 public:
+	xtea3() = default;
+	~xtea3() = default;
+
 	uint8_t* data_ptr = nullptr;
 	uint32_t size_crypt = 0;
 	uint32_t size_decrypt_data = 0;
@@ -178,10 +181,6 @@ protected:
 			memcpy(inout + offset, data, mod);
 		}
 	}
-
-public:
-	xtea3() = default;
-	~xtea3() = default;
 
 	uint8_t* data_crypt(const uint8_t* data, const uint32_t key[8], const uint32_t size)
 	{
