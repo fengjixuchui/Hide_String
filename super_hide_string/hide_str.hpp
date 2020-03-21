@@ -1,25 +1,23 @@
 #pragma once
 #include <array>
-#include <cstdarg>
 #include <random>
 
+using namespace std;
+constexpr auto block_size = 16;
 #define MMIX(h,k) { (k) *= m; (k) ^= (k) >> r; (k) *= m; (h) *= m; (h) ^= (k); }
-#define DEBUG_PRINT(m,...) //printf(m,__VA_ARGS__)
-#define BLOCK_SIZE 16
-
-#define HIDE_STR(hide, s) auto (hide) = hide_string<sizeof(s) - 1, __COUNTER__ >(s, std::make_index_sequence<sizeof(s) - 1>())
-#define PRINT_HIDE_STR(s) (hide_string<sizeof(s) - 1, __COUNTER__ >(s, std::make_index_sequence<sizeof(s) - 1>()).decrypt())
+#define HIDE_STR(hide, s) auto (hide) = hide_string<sizeof(s) - 1, __COUNTER__ >(s, make_index_sequence<sizeof(s) - 1>())
+#define PRINT_HIDE_STR(s) (hide_string<sizeof(s) - 1, __COUNTER__ >(s, make_index_sequence<sizeof(s) - 1>()).decrypt())
 
 inline uint32_t murmur3(const void* key, int len, unsigned int seed)
 {
 	const unsigned int m = 0x5bd1e995;
-	const int r = 24;
+	const auto r = 24;
 	unsigned int l = len;
 	const auto* data = static_cast<const unsigned char*>(key);
-	unsigned int h = seed;
+	auto h = seed;
 	while (len >= 4)
 	{
-		unsigned int k = *(unsigned int*)data;
+		auto k = *(unsigned int*)data;
 		MMIX(h, k);
 		data += 4;
 		len -= 4;
@@ -31,7 +29,7 @@ inline uint32_t murmur3(const void* key, int len, unsigned int seed)
 	case 2: t ^= data[1] << 8;
 	case 1: t ^= data[0];
 	default: ;
-	};
+	}
 	MMIX(h, t);
 	MMIX(h, l);
 	h ^= h >> 13;
@@ -91,15 +89,15 @@ public:
 	uint32_t size_decrypt_data = 0;
 
 protected:
-	static uint32_t rol(uint32_t base, uint32_t shift)
+	static uint32_t rol(const uint32_t base, uint32_t shift)
 	{
 		/* only 5 bits of shift are significant*/
 		shift &= 0x1F;
-		const auto res = base << shift | base >> 32 - shift;
+		const auto res = base << shift | base >> unsigned(32 - shift);
 		return res;
 	};
 
-	static void xtea3_encipher(unsigned int num_rounds, uint32_t* v, const uint32_t* k)
+	static void xtea3_encipher(const unsigned int num_rounds, uint32_t* v, const uint32_t* k)
 	{
 		const auto delta = 0x9E3779B9;
 		unsigned sum = 0;
@@ -155,22 +153,22 @@ protected:
 
 	static void xtea3_data_crypt(uint8_t* inout, const uint32_t len, const bool encrypt, const uint32_t* key)
 	{
-		static unsigned char data_array[BLOCK_SIZE];
-		for (unsigned int i = 0; i < len / BLOCK_SIZE; i++)
+		static unsigned char data_array[block_size];
+		for (unsigned int i = 0; i < len / block_size; i++)
 		{
-			memcpy(data_array, inout, BLOCK_SIZE);
+			memcpy(data_array, inout, block_size);
 			if (encrypt)
 				xtea3_encipher(48, reinterpret_cast<uint32_t*>(data_array), key); // TODO: reinterpret_cast check
 			else
 				xtea3_decipher(48, reinterpret_cast<uint32_t*>(data_array), key); // TODO: reinterpret_cast check
-			memcpy(inout, data_array, BLOCK_SIZE);
-			inout = inout + BLOCK_SIZE;
+			memcpy(inout, data_array, block_size);
+			inout = inout + block_size;
 		}
-		if (len % BLOCK_SIZE != 0)
+		if (len % block_size != 0)
 		{
-			const auto mod = len % BLOCK_SIZE;
-			const auto offset = len / BLOCK_SIZE * BLOCK_SIZE;
-			uint32_t data[BLOCK_SIZE];
+			const auto mod = len % block_size;
+			const auto offset = len / block_size * block_size;
+			uint32_t data[block_size];
 			memcpy(data, inout + offset, mod);
 			if (encrypt)
 				xtea3_encipher(32, static_cast<uint32_t*>(data), key);
@@ -258,7 +256,7 @@ class hide_string : protected xtea3
 	const char key_;
 	uint32_t key_for_xtea3_[8]{};
 	uint8_t* crypted_str_;
-	std::array<char, N + 1> encrypted_;
+	array<char, N + 1> encrypted_;
 
 	constexpr char enc(const char c) const
 	{
@@ -273,7 +271,7 @@ class hide_string : protected xtea3
 public:
 	// Constructor
 	template <size_t... Is>
-	constexpr __forceinline hide_string(const char* str, std::index_sequence<Is...>)
+	constexpr __forceinline hide_string(const char* str, index_sequence<Is...>)
 		: key_(random_char<K>::value), encrypted_
 		  {
 			  enc(str[Is])...
@@ -287,10 +285,10 @@ public:
 			key_for_xtea3_[i] = murmur3(&value_for_gen_key, sizeof value_for_gen_key, i);
 		}
 		// crypt
-		crypted_str_ = data_crypt((const uint8_t*)encrypted_.data(), key_for_xtea3_, N);
+		crypted_str_ = data_crypt(reinterpret_cast<const uint8_t*>(encrypted_.data()), key_for_xtea3_, N);
 	}
 
-	__forceinline uint8_t* decrypt(void)
+	__forceinline uint8_t* decrypt()
 	{
 		// key for xtea3
 		uint32_t value_for_gen_key = seed;
