@@ -4,6 +4,7 @@
 
 using namespace std;
 constexpr auto block_size = 16;
+constexpr auto xtea3_delta = 0x9E3889B9;
 #define MMIX(h,k) { (k) *= m; (k) ^= (k) >> r; (k) *= m; (h) *= m; (h) ^= (k); }
 #define HIDE_STR2(hide, s) auto (hide) = hide_string<sizeof(s) - 1, __COUNTER__ >(s, make_index_sequence<sizeof(s) - 1>())
 #define HIDE_STR(s) (hide_string<sizeof(s) - 1, __COUNTER__ >(s, make_index_sequence<sizeof(s) - 1>()).decrypt())
@@ -99,7 +100,7 @@ protected:
 
 	static void xtea3_encipher(const unsigned int num_rounds, uint32_t* v, const uint32_t* k)
 	{
-		const auto delta = 0x9E3779B9;
+		const auto delta = xtea3_delta;
 		unsigned sum = 0;
 		auto a = v[0] + k[0];
 		auto b = v[1] + k[1];
@@ -126,7 +127,7 @@ protected:
 
 	static void xtea3_decipher(const unsigned int num_rounds, uint32_t* v, const uint32_t* k)
 	{
-		const auto delta = 0x9E3779B9;
+		const auto delta = xtea3_delta;
 		auto sum = delta * num_rounds;
 		auto d = v[3] ^ k[7];
 		auto c = v[2] ^ k[6];
