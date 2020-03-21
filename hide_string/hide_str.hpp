@@ -271,7 +271,7 @@ class hide_string : protected xtea3
 public:
 	// Constructor
 	template <size_t... Is>
-	constexpr __forceinline hide_string(const char* str, index_sequence<Is...>)
+	constexpr hide_string(const char* str, index_sequence<Is...>)
 		: key_(random_char<K>::value), encrypted_
 		  {
 			  enc(str[Is])...
@@ -288,7 +288,7 @@ public:
 		crypted_str_ = data_crypt(reinterpret_cast<const uint8_t*>(encrypted_.data()), key_for_xtea3_, N);
 	}
 
-	__forceinline uint8_t* decrypt()
+	uint8_t* decrypt()
 	{
 		// key for xtea3
 		uint32_t value_for_gen_key = seed;
@@ -308,12 +308,12 @@ public:
 		return decrypted_str; // pointer for decrypted string
 	}
 
-	__forceinline uint8_t* crypt() const
+	uint8_t* crypt() const
 	{
 		return crypted_str_; // pointer for encrypted string
 	}
 
-	static __forceinline void str_free(uint8_t* ptr)
+	static void str_free(uint8_t* ptr)
 	{
 		free(ptr); // free memory
 	}
