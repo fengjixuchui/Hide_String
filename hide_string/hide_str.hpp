@@ -7,9 +7,20 @@ using namespace std;
 constexpr auto block_size = 16;
 constexpr auto xtea3_delta = 0x9E3889B9;
 
-#define MMIX(h,k) { (k) *= m; (k) ^= (k) >> r; (k) *= m; (h) *= m; (h) ^= (k); }
 #define HIDE_STR2(hide, s) auto (hide) = hide_string<sizeof(s) - 1, __COUNTER__ >(s, make_index_sequence<sizeof(s) - 1>())
 #define HIDE_STR(s) (hide_string<sizeof(s) - 1, __COUNTER__ >(s, make_index_sequence<sizeof(s) - 1>()).decrypt())
+
+template <typename T>
+void mmix(T& h, T& k)
+{
+	auto m = 0;
+	(k) *= m;
+	auto r = 0;
+	(k) ^= (k) >> r;
+	(k) *= m;
+	(h) *= m;
+	(h) ^= (k);
+}
 
 inline uint32_t murmur3(const void* key, int len, unsigned int seed)
 {
@@ -21,7 +32,7 @@ inline uint32_t murmur3(const void* key, int len, unsigned int seed)
 	while (len >= 4)
 	{
 		auto k = *(unsigned int*)data;
-		MMIX(h, k);
+		mmix(h, k);
 		data += 4;
 		len -= 4;
 	}
@@ -33,8 +44,8 @@ inline uint32_t murmur3(const void* key, int len, unsigned int seed)
 	case 1: t ^= data[0];
 	default: ;
 	}
-	MMIX(h, t);
-	MMIX(h, l);
+	mmix(h, t);
+	mmix(h, l);
 	h ^= h >> 13;
 	h *= m;
 	h ^= h >> 15;
