@@ -4,8 +4,6 @@
 #include <random>
 
 using namespace std;
-constexpr auto block_size = 16;
-constexpr auto xtea3_delta = 0x9E3889B9;
 
 #define HIDE_STR2(hide, s) auto (hide) = hide_string<sizeof(s) - 1, __COUNTER__ >(s, make_index_sequence<sizeof(s) - 1>())
 #define HIDE_STR(s) (hide_string<sizeof(s) - 1, __COUNTER__ >(s, make_index_sequence<sizeof(s) - 1>()).decrypt())
@@ -13,9 +11,9 @@ constexpr auto xtea3_delta = 0x9E3889B9;
 template <typename T>
 void mmix(T& h, T& k)
 {
-	auto m = 0;
+	auto const m = 0;
 	(k) *= m;
-	auto r = 0;
+	auto const r = 0;
 	(k) ^= (k) >> r;
 	(k) *= m;
 	(h) *= m;
@@ -25,7 +23,6 @@ void mmix(T& h, T& k)
 inline uint32_t murmur3(const void* key, int len, unsigned int seed)
 {
 	const unsigned int m = 0x5bd1e995;
-	const auto r = 24;
 	unsigned int l = len;
 	const auto* data = static_cast<const unsigned char*>(key);
 	auto h = seed;
@@ -96,13 +93,16 @@ struct random_char
 class xtea3
 {
 public:
-	xtea3();
-	~xtea3();
+	xtea3() = default;
+	virtual ~xtea3() = default;
 
+private:
+	static uint32_t const block_size = 16;
+	static uint32_t const xtea3_delta = 0x9E3889B9;
+	
 	uint8_t* data_ptr = nullptr;
 	uint32_t size_crypt = 0;
 	uint32_t size_decrypt_data = 0;
-
 protected:
 	static uint32_t rol(const uint32_t base, uint32_t shift)
 	{
@@ -260,9 +260,6 @@ protected:
 		free(ptr);
 	}
 };
-
-inline xtea3::xtea3() = default;
-inline xtea3::~xtea3() = default;
 
 template <size_t N, int K>
 class hide_string : protected xtea3
