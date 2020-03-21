@@ -85,8 +85,8 @@ struct random_char
 class xtea3
 {
 public:
-	xtea3() = default;
-	~xtea3() = default;
+	xtea3();
+	~xtea3();
 
 	uint8_t* data_ptr = nullptr;
 	uint32_t size_crypt = 0;
@@ -162,9 +162,9 @@ protected:
 		{
 			memcpy(data_array, inout, block_size);
 			if (encrypt)
-				xtea3_encipher(48, reinterpret_cast<uint32_t*>(data_array), key); // TODO: reinterpret_cast check
+				xtea3_encipher(48, reinterpret_cast<uint32_t*>(data_array), key);
 			else
-				xtea3_decipher(48, reinterpret_cast<uint32_t*>(data_array), key); // TODO: reinterpret_cast check
+				xtea3_decipher(48, reinterpret_cast<uint32_t*>(data_array), key);
 			memcpy(inout, data_array, block_size);
 			inout = inout + block_size;
 		}
@@ -249,6 +249,9 @@ protected:
 		free(ptr);
 	}
 };
+
+inline xtea3::xtea3() = default;
+inline xtea3::~xtea3() = default;
 
 template <size_t N, int K>
 class hide_string : protected xtea3
