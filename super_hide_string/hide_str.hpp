@@ -7,8 +7,8 @@
 #define DEBUG_PRINT(m,...) //printf(m,__VA_ARGS__)
 #define BLOCK_SIZE 16
 
-#define HIDE_STR(hide, s) auto (hide) = HideString<sizeof(s) - 1, __COUNTER__ >(s, std::make_index_sequence<sizeof(s) - 1>())
-#define PRINT_HIDE_STR(s) (HideString<sizeof(s) - 1, __COUNTER__ >(s, std::make_index_sequence<sizeof(s) - 1>()).decrypt())
+#define HIDE_STR(hide, s) auto (hide) = hide_string<sizeof(s) - 1, __COUNTER__ >(s, std::make_index_sequence<sizeof(s) - 1>())
+#define PRINT_HIDE_STR(s) (hide_string<sizeof(s) - 1, __COUNTER__ >(s, std::make_index_sequence<sizeof(s) - 1>()).decrypt())
 
 inline uint32_t murmur3(const void* key, int len, unsigned int seed)
 {
@@ -195,7 +195,7 @@ public:
 		// Allocate memory for aligned buffer
 		// Plus eight bytes, so that there is the size of the encrypted data and the size of the original data, all this will be stored in the encrypted data
 		data_ptr = nullptr;
-		data_ptr = (uint8_t*)malloc(size_crypt_tmp + 8);
+		data_ptr = static_cast<uint8_t*>(malloc(size_crypt_tmp + 8));
 		if (data_ptr == nullptr)
 		{
 			return nullptr;
@@ -203,31 +203,26 @@ public:
 		// Put the size of the crypted data and the size of the original in the resulting buffer
 		size_crypt = size_crypt_tmp + 8;
 		size_decrypt_data = size;
-		memcpy(data_ptr, (char*)&size_crypt, 4);
-		memcpy(data_ptr + 4, (char*)&size_decrypt_data, 4);
+		memcpy(data_ptr, reinterpret_cast<char*>(&size_crypt), 4);
+		memcpy(data_ptr + 4, reinterpret_cast<char*>(&size_decrypt_data), 4);
 		memcpy(data_ptr + 8, data, size);
 		// Encrypt data
 		xtea3_data_crypt(data_ptr + 8, size_crypt - 8, true, key);
 		return data_ptr;
 	}
 
-	uint8_t* data_decrypt(const uint8_t* data, const uint32_t key[8], uint32_t size)
+	uint8_t* data_decrypt(const uint8_t* data, const uint32_t key[8], const uint32_t size)
 	{
 		// Get the size of the crypted data and the size of the original
-		memcpy((char*)&size_crypt, data, 4);
-		memcpy((char*)&size_decrypt_data, data + 4, 4);
-		DEBUG_PRINT("DECRYPT: \n");
-		DEBUG_PRINT("SIZE = %d \n", size);
-		DEBUG_PRINT("size_crypt = %d \n", size_crypt);
-		DEBUG_PRINT("size_decrypt_data = %d \n", size_decrypt_data);
+		memcpy(reinterpret_cast<char*>(&size_crypt), data, 4);
+		memcpy(reinterpret_cast<char*>(&size_decrypt_data), data + 4, 4);
 		if (size_crypt <= size)
 		{
 			// Allocate memory for decrypted data
 			data_ptr = nullptr;
-			data_ptr = (uint8_t*)malloc(size_crypt);
+			data_ptr = static_cast<uint8_t*>(malloc(size_crypt));
 			if (data_ptr == nullptr)
 			{
-				DEBUG_PRINT("NO FREE MEM \n");
 				return nullptr;
 			}
 			memcpy(data_ptr, data + 8, size_crypt - 8);
@@ -236,66 +231,63 @@ public:
 		}
 		else
 		{
-			DEBUG_PRINT("size_crypt > size \n");
 			return nullptr;
 		}
 		return data_ptr;
 	}
 
-	uint32_t get_decrypt_size(void)
+	uint32_t get_decrypt_size() const
 	{
 		return size_decrypt_data;
 	}
 
-	uint32_t get_crypt_size(void)
+	uint32_t get_crypt_size() const
 	{
 		return size_crypt;
 	}
 
-	void free_ptr(uint8_t* ptr)
+	static void free_ptr(uint8_t* ptr)
 	{
 		free(ptr);
 	}
 };
 
 template <size_t N, int K>
-class HideString : protected xtea3
+class hide_string : protected xtea3
 {
-private:
-	const char _key;
-	uint32_t key_for_xtea3[8]{};
-	uint8_t* crypted_str;
-	std::array<char, N + 1> _encrypted;
+	const char key_;
+	uint32_t key_for_xtea3_[8]{};
+	uint8_t* crypted_str_;
+	std::array<char, N + 1> encrypted_;
 
-	constexpr char enc(char c) const
+	constexpr char enc(const char c) const
 	{
-		return c ^ _key;
+		return c ^ key_;
 	}
 
-	char dec(char c) const
+	char dec(const char c) const
 	{
-		return c ^ _key;
+		return c ^ key_;
 	}
 
 public:
 	// Constructor
 	template <size_t... Is>
-	constexpr __forceinline HideString(const char* str, std::index_sequence<Is...>)
-		: _key(random_char<K>::value), _encrypted
+	constexpr __forceinline hide_string(const char* str, std::index_sequence<Is...>)
+		: key_(random_char<K>::value), encrypted_
 		  {
 			  enc(str[Is])...
-
 		  }
 	{
 		// key for xtea3
 		uint32_t value_for_gen_key = seed;
 		// gen pass for XTEA3
-		for (int i = 0; i < 8; i++)
+		for (auto i = 0; i < 8; i++)
 		{
-			key_for_xtea3[i] = murmur3(&value_for_gen_key, sizeof value_for_gen_key, i);
+			key_for_xtea3_[i] = murmur3(&value_for_gen_key, sizeof value_for_gen_key, i);
 		}
 		// crypt
-		crypted_str = data_crypt((const uint8_t*)_encrypted.data(), key_for_xtea3, N);
+		crypted_str_ = data_crypt((const uint8_t*)encrypted_.data(), key_for_xtea3_, N);
 	}
 
 	__forceinline uint8_t* decrypt(void)
@@ -303,12 +295,12 @@ public:
 		// key for xtea3
 		uint32_t value_for_gen_key = seed;
 		// gen pass for XTEA3
-		for (int i = 0; i < 8; i++)
+		for (auto i = 0; i < 8; i++)
 		{
-			key_for_xtea3[i] = murmur3(&value_for_gen_key, sizeof value_for_gen_key, i);
+			key_for_xtea3_[i] = murmur3(&value_for_gen_key, sizeof value_for_gen_key, i);
 		}
 		// decrypt
-		uint8_t* decrypted_str = data_decrypt(crypted_str, key_for_xtea3, this->get_crypt_size());
+		uint8_t* decrypted_str = data_decrypt(crypted_str_, key_for_xtea3_, this->get_crypt_size());
 		if (decrypted_str == nullptr) return nullptr;
 		for (size_t i = 0; i < N; ++i)
 		{
@@ -318,12 +310,12 @@ public:
 		return decrypted_str; // pointer for decrypted string
 	}
 
-	__forceinline uint8_t* crypt(void)
+	__forceinline uint8_t* crypt() const
 	{
-		return crypted_str; // pointer for encrypted string
+		return crypted_str_; // pointer for encrypted string
 	}
 
-	__forceinline void str_free(uint8_t* ptr)
+	static __forceinline void str_free(uint8_t* ptr)
 	{
 		free(ptr); // free memory
 	}
