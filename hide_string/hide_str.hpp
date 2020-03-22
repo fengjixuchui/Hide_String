@@ -13,27 +13,27 @@ namespace hide_string
 	{
 		auto const m = 0;
 		(k) *= m;
-		auto const r = 0;
+		int32_t r = 0;
 		(k) ^= (k) >> r;
 		(k) *= m;
 		(h) *= m;
 		(h) ^= (k);
 	}
 
-	inline uint32_t murmur3(const void* key, int len, unsigned int seed)
+	inline uint32_t murmur3(const void* key, int32_t len, int32_t seed)
 	{
-		const unsigned int m = 0x5bd1e995;
-		unsigned int l = len;
+		const int32_t m = 0x5bd1e995;
+		int32_t l = len;
 		const auto* data = static_cast<const unsigned char*>(key);
-		auto h = seed;
+		int32_t h = seed;
 		while (len >= 4)
 		{
-			auto k = *(unsigned int*)data;
+			int32_t k = *(unsigned int*)data;
 			mmix(h, k);
 			data += 4;
 			len -= 4;
 		}
-		unsigned int t = 0;
+		int32_t t = 0;
 		switch (len)
 		{
 		case 3: t ^= data[2] << 16;
@@ -54,37 +54,37 @@ namespace hide_string
 	constexpr auto seed = static_cast<int>(time[7]) + static_cast<int>(time[6]) * 10 + static_cast<int>(time[4]) * 60 +
 		static_cast<int>(time[3]) * 600 + static_cast<int>(time[1]) * 3600 + static_cast<int>(time[0]) * 36000;
 
-	template <int N>
+	template <int32_t N>
 	struct random_generator_string
 	{
 	private:
-		static constexpr unsigned a = 16807;
-		static constexpr unsigned m = 2147483647;
-		static constexpr unsigned s = random_generator_string<N - 1>::value;
-		static constexpr unsigned lo = a * (s & 0xFFFF);
-		static constexpr unsigned hi = a * (s >> 16);
-		static constexpr unsigned lo2 = lo + ((hi & 0x7FFF) << 16);
-		static constexpr unsigned hi2 = hi >> 16;
-		static constexpr unsigned lo3 = lo2 + hi;
+		static constexpr int32_t a = 16807;
+		static constexpr int32_t m = 2147483647;
+		static constexpr int32_t s = random_generator_string<N - 1>::value;
+		static constexpr int32_t lo = a * (s & 0xFFFF);
+		static constexpr int32_t hi = a * (s >> 16);
+		static constexpr int32_t lo2 = lo + ((hi & 0x7FFF) << 16);
+		static constexpr int32_t hi2 = hi >> 16;
+		static constexpr int32_t lo3 = lo2 + hi;
 
 	public:
-		static constexpr unsigned max = m;
-		static constexpr unsigned value = lo3 > m ? lo3 - m : lo3;
+		static constexpr int32_t max = m;
+		static constexpr int32_t value = lo3 > m ? lo3 - m : lo3;
 	};
 
 	template <>
 	struct random_generator_string<0>
 	{
-		static constexpr unsigned value = seed;
+		static constexpr int32_t value = seed;
 	};
 
-	template <int N, int M>
+	template <int32_t N, int32_t M>
 	struct random_int
 	{
 		static constexpr auto value = random_generator_string<N + 1>::value % M;
 	};
 
-	template <int N>
+	template <int32_t N>
 	struct random_char
 	{
 		static const char value = static_cast<char>(1 + random_int<N, 0x7F - 1>::value);
@@ -94,13 +94,6 @@ namespace hide_string
 	{
 	public:
 		xtea3() = default;
-
-		xtea3(uint8_t* data_ptr, const uint32_t size_crypt, const uint32_t size_decrypt_data)
-			: data_ptr_(data_ptr),
-			  size_crypt_(size_crypt),
-			  size_decrypt_data_(size_decrypt_data)
-		{
-		}
 
 		virtual ~xtea3() = default;
 
@@ -115,26 +108,26 @@ namespace hide_string
 		static uint32_t rol(const uint32_t base, uint32_t shift)
 		{
 			shift &= 0x1F;
-			const auto res = base << shift | base >> unsigned(32 - shift);
+			const int32_t res = base << shift | base >> unsigned(32 - shift);
 			return res;
 		};
 
-		static void xtea3_encipher(const unsigned int num_rounds, uint32_t* v, const uint32_t* k)
+		static void xtea3_encipher(const int32_t num_rounds, uint32_t* v, const uint32_t* k)
 		{
-			const auto delta = xtea3_delta;
-			unsigned sum = 0;
-			auto a = v[0] + k[0];
-			auto b = v[1] + k[1];
-			auto c = v[2] + k[2];
-			auto d = v[3] + k[3];
-			for (unsigned int i = 0; i < num_rounds; i++)
+			const int32_t delta = xtea3_delta;
+			int32_t sum = 0;
+			int32_t a = v[0] + k[0];
+			int32_t b = v[1] + k[1];
+			int32_t c = v[2] + k[2];
+			int32_t d = v[3] + k[3];
+			for (int32_t i = 0; i < num_rounds; i++)
 			{
 				a += (b << 4) + rol(k[sum % 4 + 4], b) ^
 					d + sum ^ (b >> 5) + rol(k[sum % 4], b >> 27);
 				sum += delta;
 				c += (d << 4) + rol(k[(sum >> 11) % 4 + 4], d) ^
 					b + sum ^ (d >> 5) + rol(k[(sum >> 11) % 4], d >> 27);
-				const auto t = a;
+				const int32_t t = a;
 				a = b;
 				b = c;
 				c = d;
@@ -146,17 +139,17 @@ namespace hide_string
 			v[3] = d ^ k[7];
 		};
 
-		static void xtea3_decipher(const unsigned int num_rounds, uint32_t* v, const uint32_t* k)
+		static void xtea3_decipher(const int32_t num_rounds, uint32_t* v, const uint32_t* k)
 		{
-			const auto delta = xtea3_delta;
-			auto sum = delta * num_rounds;
-			auto d = v[3] ^ k[7];
-			auto c = v[2] ^ k[6];
-			auto b = v[1] ^ k[5];
-			auto a = v[0] ^ k[4];
-			for (unsigned int i = 0; i < num_rounds; i++)
+			const int32_t delta = xtea3_delta;
+			int32_t sum = delta * num_rounds;
+			int32_t d = v[3] ^ k[7];
+			int32_t c = v[2] ^ k[6];
+			int32_t b = v[1] ^ k[5];
+			int32_t a = v[0] ^ k[4];
+			for (int32_t i = 0; i < num_rounds; i++)
 			{
-				const auto t = d;
+				const int32_t t = d;
 				d = c;
 				c = b;
 				b = a;
@@ -176,7 +169,7 @@ namespace hide_string
 		static void xtea3_data_crypt(uint8_t* inout, const uint32_t len, const bool encrypt, const uint32_t* key)
 		{
 			static unsigned char data_array[block_size];
-			for (unsigned int i = 0; i < len / block_size; i++)
+			for (int32_t i = 0; i < len / block_size; i++)
 			{
 				memcpy(data_array, inout, block_size);
 				if (encrypt)
@@ -192,8 +185,8 @@ namespace hide_string
 			}
 			if (len % block_size != 0)
 			{
-				const auto mod = len % block_size;
-				const auto offset = len / block_size * block_size;
+				const int32_t mod = len % block_size;
+				const int32_t offset = len / block_size * block_size;
 				uint32_t data[block_size];
 				memcpy(data, inout + offset, mod);
 				if (encrypt)
@@ -210,7 +203,7 @@ namespace hide_string
 
 		uint8_t* data_crypt(const uint8_t* data, const uint32_t key[8], const uint32_t size)
 		{
-			auto size_crypt_tmp = size;
+			int32_t size_crypt_tmp = size;
 
 			while (size_crypt_tmp % 16 != 0)
 			{
