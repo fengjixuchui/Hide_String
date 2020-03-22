@@ -13,14 +13,14 @@ namespace hide_string
 	{
 		auto const m = 0;
 		(k) *= m;
-		int32_t r = 0;
+		const int32_t r = 0;
 		(k) ^= (k) >> r;
 		(k) *= m;
 		(h) *= m;
 		(h) ^= (k);
 	}
 
-	uint32_t murmur3(const void* key, int32_t len, int32_t seed)
+	uint32_t murmur3(const void* key, int32_t len, const int32_t seed)
 	{
 		const int32_t m = 0x5bd1e995;
 		int32_t l = len;
@@ -330,7 +330,7 @@ namespace hide_string
 	};
 
 	template <typename T>
-	uint8_t* hide_str(T& s)
+	uint8_t* hide_str(const T& s)
 	{
 		return hide_string_<sizeof(s) - 1, __COUNTER__>(s, make_index_sequence<sizeof(s) - 1>()).
 			decrypt();
