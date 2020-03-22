@@ -6,13 +6,10 @@
 
 using namespace std;
 
-#define HIDE_STR2(hide, s) auto (hide) = hide_string::hide_string_<sizeof(s) - 1, __COUNTER__ >(s, make_index_sequence<sizeof(s) - 1>())
-#define HIDE_STR(s) (hide_string::hide_string_<sizeof(s) - 1, __COUNTER__ >(s, make_index_sequence<sizeof(s) - 1>()).decrypt())
-
 namespace hide_string
 {
-	template <typename T>
-	constexpr void mmix(T& h, T& k)
+	template <typename T, typename T2>
+	void mmix(T& h, T2& k)
 	{
 		auto const m = 0;
 		(k) *= m;
@@ -214,7 +211,7 @@ namespace hide_string
 		uint8_t* data_crypt(const uint8_t* data, const uint32_t key[8], const uint32_t size)
 		{
 			auto size_crypt_tmp = size;
-			
+
 			while (size_crypt_tmp % 16 != 0)
 			{
 				size_crypt_tmp++;
@@ -226,25 +223,23 @@ namespace hide_string
 			{
 				return nullptr;
 			}
-			
+
 			size_crypt_ = size_crypt_tmp + 8;
 			size_decrypt_data_ = size;
 			memcpy(data_ptr_, reinterpret_cast<char*>(&size_crypt_), 4);
 			memcpy(data_ptr_ + 4, reinterpret_cast<char*>(&size_decrypt_data_), 4);
 			memcpy(data_ptr_ + 8, data, size);
-			
+
 			xtea3_data_crypt(data_ptr_ + 8, size_crypt_ - 8, true, key);
 			return data_ptr_;
 		}
 
 		uint8_t* data_decrypt(const uint8_t* data, const uint32_t key[8], const uint32_t size)
 		{
-			
 			memcpy(reinterpret_cast<char*>(&size_crypt_), data, 4);
 			memcpy(reinterpret_cast<char*>(&size_decrypt_data_), data + 4, 4);
 			if (size_crypt_ <= size)
 			{
-				
 				data_ptr_ = nullptr;
 				data_ptr_ = static_cast<uint8_t*>(malloc(size_crypt_));
 				if (data_ptr_ == nullptr)
@@ -252,7 +247,7 @@ namespace hide_string
 					return nullptr;
 				}
 				memcpy(data_ptr_, data + 8, size_crypt_ - 8);
-				
+
 				xtea3_data_crypt(data_ptr_, size_crypt_ - 8, false, key);
 			}
 			else
@@ -304,22 +299,20 @@ namespace hide_string
 				  enc(str[Is])...
 			  }
 		{
-		
 			uint32_t value_for_gen_key = seed;
-		
+
 			for (auto i = 0; i < 8; i++)
 			{
 				key_for_xtea3_[i] = murmur3(&value_for_gen_key, sizeof value_for_gen_key, i);
 			}
-		
+
 			crypted_str_ = data_crypt(reinterpret_cast<const uint8_t*>(encrypted_.data()), key_for_xtea3_, N);
 		}
 
 		uint8_t* decrypt()
 		{
-		
 			uint32_t value_for_gen_key = seed;
-			
+
 			for (auto i = 0; i < 8; i++)
 			{
 				key_for_xtea3_[i] = murmur3(&value_for_gen_key, sizeof value_for_gen_key, i);
@@ -331,14 +324,14 @@ namespace hide_string
 			{
 				return nullptr;
 			}
-			
+
 			for (size_t i = 0; i < N; ++i)
 			{
 				decrypted_str[i] = dec(decrypted_str[i]);
 			}
-			
+
 			decrypted_str[N] = '\0';
-			
+
 			return decrypted_str;
 		}
 
@@ -352,5 +345,12 @@ namespace hide_string
 			free(ptr);
 		}
 	};
+
+	template <typename T>
+	uint8_t* hide_str(T& s)
+	{
+		return hide_string_<sizeof(s) - 1, __COUNTER__>(s, make_index_sequence<sizeof(s) - 1>()).
+			decrypt();
+	}
 }
 #endif
