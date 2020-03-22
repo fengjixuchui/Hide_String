@@ -169,7 +169,7 @@ namespace hide_string
 		static void xtea3_data_crypt(uint8_t* inout, const uint32_t len, const bool encrypt, const uint32_t* key)
 		{
 			static unsigned char data_array[block_size];
-			for (int32_t i = 0; i < len / block_size; i++)
+			for (int32_t i = 0; i < static_cast<int32_t>(len / block_size); i++)
 			{
 				memcpy(data_array, inout, block_size);
 				if (encrypt)
