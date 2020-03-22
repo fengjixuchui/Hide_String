@@ -20,7 +20,7 @@ namespace hide_string
 		(h) ^= (k);
 	}
 
-	inline uint32_t murmur3(const void* key, int32_t len, int32_t seed)
+	uint32_t murmur3(const void* key, int32_t len, int32_t seed)
 	{
 		const int32_t m = 0x5bd1e995;
 		int32_t l = len;
