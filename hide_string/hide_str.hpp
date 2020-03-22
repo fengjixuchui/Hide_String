@@ -267,7 +267,7 @@ namespace hide_string
 	};
 
 	template <size_t N, int K>
-	class hide_string_ : protected xtea3
+	class hide_string_impl : protected xtea3
 	{
 		const char key_;
 		uint32_t key_for_xtea3_[8]{};
@@ -286,7 +286,7 @@ namespace hide_string
 
 	public:
 		template <size_t... Is>
-		constexpr hide_string_(const char* str, index_sequence<Is...>)
+		constexpr hide_string_impl(const char* str, index_sequence<Is...>)
 			: key_(random_char<K>::value), encrypted_
 			  {
 				  enc(str[Is])...
@@ -332,7 +332,7 @@ namespace hide_string
 	template <typename T>
 	uint8_t* hide_str(const T& s)
 	{
-		return hide_string_<sizeof(s) - 1, __COUNTER__>(s, make_index_sequence<sizeof(s) - 1>()).
+		return hide_string_impl<sizeof(s) - 1, __COUNTER__>(s, make_index_sequence<sizeof(s) - 1>()).
 			decrypt();
 	}
 }
