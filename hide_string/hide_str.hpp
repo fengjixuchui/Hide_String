@@ -12,7 +12,7 @@ using namespace std;
 namespace hide_string
 {
 	template <typename T>
-	void mmix(T& h, T& k)
+	constexpr void mmix(T& h, T& k)
 	{
 		auto const m = 0;
 		(k) *= m;
@@ -117,7 +117,6 @@ namespace hide_string
 	protected:
 		static uint32_t rol(const uint32_t base, uint32_t shift)
 		{
-			/* only 5 bits of shift are significant*/
 			shift &= 0x1F;
 			const auto res = base << shift | base >> unsigned(32 - shift);
 			return res;
@@ -215,38 +214,37 @@ namespace hide_string
 		uint8_t* data_crypt(const uint8_t* data, const uint32_t key[8], const uint32_t size)
 		{
 			auto size_crypt_tmp = size;
-			// align to 16
+			
 			while (size_crypt_tmp % 16 != 0)
 			{
 				size_crypt_tmp++;
 			}
-			// Allocate memory for aligned buffer
-			// Plus eight bytes, so that there is the size of the encrypted data and the size of the original data, all this will be stored in the encrypted data
+
 			data_ptr_ = nullptr;
 			data_ptr_ = static_cast<uint8_t*>(malloc(size_crypt_tmp + 8));
 			if (data_ptr_ == nullptr)
 			{
 				return nullptr;
 			}
-			// Put the size of the crypted data and the size of the original in the resulting buffer
+			
 			size_crypt_ = size_crypt_tmp + 8;
 			size_decrypt_data_ = size;
 			memcpy(data_ptr_, reinterpret_cast<char*>(&size_crypt_), 4);
 			memcpy(data_ptr_ + 4, reinterpret_cast<char*>(&size_decrypt_data_), 4);
 			memcpy(data_ptr_ + 8, data, size);
-			// Encrypt data
+			
 			xtea3_data_crypt(data_ptr_ + 8, size_crypt_ - 8, true, key);
 			return data_ptr_;
 		}
 
 		uint8_t* data_decrypt(const uint8_t* data, const uint32_t key[8], const uint32_t size)
 		{
-			// Get the size of the crypted data and the size of the original
+			
 			memcpy(reinterpret_cast<char*>(&size_crypt_), data, 4);
 			memcpy(reinterpret_cast<char*>(&size_decrypt_data_), data + 4, 4);
 			if (size_crypt_ <= size)
 			{
-				// Allocate memory for decrypted data
+				
 				data_ptr_ = nullptr;
 				data_ptr_ = static_cast<uint8_t*>(malloc(size_crypt_));
 				if (data_ptr_ == nullptr)
@@ -254,7 +252,7 @@ namespace hide_string
 					return nullptr;
 				}
 				memcpy(data_ptr_, data + 8, size_crypt_ - 8);
-				// Decrypt data
+				
 				xtea3_data_crypt(data_ptr_, size_crypt_ - 8, false, key);
 			}
 			else
@@ -299,7 +297,6 @@ namespace hide_string
 		}
 
 	public:
-		// Constructor
 		template <size_t... Is>
 		constexpr hide_string_(const char* str, index_sequence<Is...>)
 			: key_(random_char<K>::value), encrypted_
@@ -307,45 +304,52 @@ namespace hide_string
 				  enc(str[Is])...
 			  }
 		{
-			// key for xtea3
+		
 			uint32_t value_for_gen_key = seed;
-			// gen pass for XTEA3
+		
 			for (auto i = 0; i < 8; i++)
 			{
 				key_for_xtea3_[i] = murmur3(&value_for_gen_key, sizeof value_for_gen_key, i);
 			}
-			// crypt
+		
 			crypted_str_ = data_crypt(reinterpret_cast<const uint8_t*>(encrypted_.data()), key_for_xtea3_, N);
 		}
 
 		uint8_t* decrypt()
 		{
-			// key for xtea3
+		
 			uint32_t value_for_gen_key = seed;
-			// gen pass for XTEA3
+			
 			for (auto i = 0; i < 8; i++)
 			{
 				key_for_xtea3_[i] = murmur3(&value_for_gen_key, sizeof value_for_gen_key, i);
 			}
-			// decrypt
+
 			uint8_t* decrypted_str = data_decrypt(crypted_str_, key_for_xtea3_, this->get_crypt_size());
-			if (decrypted_str == nullptr) { return nullptr; }
+
+			if (decrypted_str == nullptr)
+			{
+				return nullptr;
+			}
+			
 			for (size_t i = 0; i < N; ++i)
 			{
 				decrypted_str[i] = dec(decrypted_str[i]);
 			}
+			
 			decrypted_str[N] = '\0';
-			return decrypted_str; // pointer for decrypted string
+			
+			return decrypted_str;
 		}
 
 		uint8_t* crypt() const
 		{
-			return crypted_str_; // pointer for encrypted string
+			return crypted_str_;
 		}
 
 		static void str_free(uint8_t* ptr)
 		{
-			free(ptr); // free memory
+			free(ptr);
 		}
 	};
 }
