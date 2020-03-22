@@ -327,16 +327,6 @@ namespace hide_string
 
 			return decrypted_str;
 		}
-
-		uint8_t* crypt() const
-		{
-			return crypted_str_;
-		}
-
-		static void str_free(uint8_t* ptr)
-		{
-			free(ptr);
-		}
 	};
 
 	template <typename T>
