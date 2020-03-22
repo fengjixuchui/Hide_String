@@ -1,5 +1,5 @@
-#ifndef HIDE_STR_H
-#define HIDE_STR_H
+#ifndef HIDE_STR_HPP
+#define HIDE_STR_HPP
 
 #include <array>
 #include <random>
